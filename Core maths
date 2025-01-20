@@ -1,0 +1,32 @@
+from flask import Flask, request, jsonify
+from sympy import sympify, solve, simplify, symbols
+from sympy.parsing.sympy_parser import standard_transformations, implicit_multiplication_application
+
+app = Flask(__name__)
+
+@app.route('/solve', methods=['POST'])
+def solve_math():
+    try:
+        # Get the math question from the request
+        data = request.json
+        question = data.get("question")
+
+        if not question:
+            return jsonify({"error": "No question provided"}), 400
+
+        # Parse and solve the question
+        transformations = (standard_transformations + (implicit_multiplication_application,))
+        expr = sympify(question, transformations=transformations)
+        solution = solve(expr)
+        steps = str(expr.simplify())
+
+        return jsonify({
+            "question": question,
+            "solution": str(solution),
+            "steps": steps
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
+    app.run(debug=True)
